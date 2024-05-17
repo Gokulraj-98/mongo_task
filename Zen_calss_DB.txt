@@ -1,0 +1,171 @@
+collections created:
+
+//users
+
+{
+  "_id": ObjectId("60c72b2f5f1b2c001c8e4b8b"),
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "role": "student"
+}
+
+//codekata
+{
+  "_id": ObjectId("60c72b2f5f1b2c001c8e4b8c"),
+  "user_id": ObjectId("60c72b2f5f1b2c001c8e4b8b"),
+  "problems_solved": 120
+}
+
+//attendance
+{
+  "_id": ObjectId("60c72b2f5f1b2c001c8e4b8d"),
+  "user_id": ObjectId("60c72b2f5f1b2c001c8e4b8b"),
+  "date": ISODate("2023-10-01T00:00:00Z"),
+  "status": "present"
+}
+
+//topics
+{
+  "_id": ObjectId("60c72b2f5f1b2c001c8e4b8e"),
+  "topic_name": "React Basics",
+  "date": ISODate("2023-10-05T00:00:00Z")
+}
+
+//tasks:
+
+{
+  "_id": ObjectId("60c72b2f5f1b2c001c8e4b8f"),
+  "task_name": "React Assignment",
+  "date": ISODate("2023-10-07T00:00:00Z"),
+  "submitted": true,
+  "user_id": ObjectId("60c72b2f5f1b2c001c8e4b8b")
+}
+
+//company drives:
+{
+  "_id": ObjectId("60c72b2f5f1b2c001c8e4b90"),
+  "company_name": "Google",
+  "date": ISODate("2020-10-20T00:00:00Z"),
+  "students_appeared": [
+    ObjectId("60c72b2f5f1b2c001c8e4b8b"),
+    ObjectId("60c72b2f5f1b2c001c8e4b8a")
+  ]
+}
+
+//mentors:
+{
+  "_id": ObjectId("60c72b2f5f1b2c001c8e4b91"),
+  "name": "Jane Smith",
+  "mentees": [
+    ObjectId("60c72b2f5f1b2c001c8e4b8b"),
+    ObjectId("60c72b2f5f1b2c001c8e4b8a"),
+    // more mentees
+  ]
+}
+
+
+
+// To find all the topics and tasks which are thought in the month of October
+db.topics.find({
+  date: {
+    $gte: ISODate("2023-10-01T00:00:00Z"),
+    $lt: ISODate("2023-11-01T00:00:00Z")
+  }
+});
+
+db.tasks.find({
+  date: {
+    $gte: ISODate("2023-10-01T00:00:00Z"),
+    $lt: ISODate("2023-11-01T00:00:00Z")
+  }
+});
+
+
+//To find all the company drives which appeared between 15 oct-2020 and 31-oct-2020
+
+db.company_drives.find({
+  date: {
+    $gte: ISODate("2020-10-15T00:00:00Z"),
+    $lt: ISODate("2020-11-01T00:00:00Z")
+  }
+});
+
+//To find all the company drives and students who are appeared for the placement
+db.company_drives.aggregate([
+  {
+    $lookup: {
+      from: "users",
+      localField: "students_appeared",
+      foreignField: "_id",
+      as: "students"
+    }
+  }
+]);
+
+
+//to find the number of problems solved by the user in codekata
+db.codekata.find(
+  { user_id: ObjectId("60c72b2f5f1b2c001c8e4b8b") },
+  { problems_solved: 1 }
+);
+
+// to find all the mentors with who has the mentee's count more than 15
+db.mentors.find({
+  $expr: { $gt: [{ $size: "$mentees" }, 15] }
+});
+
+// to find the number of users who are absent and task is not submitted between 15 oct-2020 and 31-oct-2020
+db.attendance.aggregate([
+  {
+    $match: {
+      date: { $gte: ISODate("2020-10-15T00:00:00Z"), $lt: ISODate("2020-11-01T00:00:00Z") },
+      status: "absent"
+    }
+  },
+  {
+    $lookup: {
+      from: "tasks",
+      localField: "user_id",
+      foreignField: "user_id",
+      as: "tasks"
+    }
+  },
+  {
+    $match: { "tasks.submitted": false }
+  },
+  {
+    $group: {
+      _id: "$user_id",
+      count: { $sum: 1 }
+    }
+  }
+]);
+
+// to find the number of users who are absent and task is not submitted between 15 oct-2020 and 31-oct-2020
+
+db.attendance.aggregate([
+  {
+    $match: {
+      date: { $gte: ISODate("2020-10-15T00:00:00Z"), $lt: ISODate("2020-11-01T00:00:00Z") },
+      status: "absent"
+    }
+  },
+  {
+    $lookup: {
+      from: "tasks",
+      localField: "user_id",
+      foreignField: "user_id",
+      as: "tasks"
+    }
+  },
+  {
+    $match: { "tasks.submitted": false }
+  },
+  {
+    $group: {
+      _id: "$user_id",
+      count: { $sum: 1 }
+    }
+  }
+]);
+
